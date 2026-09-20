@@ -22,8 +22,18 @@ export function generateHTMLReport(report: MonthlyReport): string {
   return outputPath;
 }
 
+function formatHtmlDelta(delta: number | null, unit = '', decimals = 0): string {
+  if (delta === null) return `<div class="behavior-delta neutral">(전월 없음)</div>`;
+  const sign = delta >= 0 ? '+' : '';
+  const val = decimals > 0 ? delta.toFixed(decimals) : String(Math.round(delta));
+  const arrow = delta > 0 ? ' ↑' : delta < 0 ? ' ↓' : '';
+  const cssClass = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
+  return `<div class="behavior-delta ${cssClass}">${sign}${val}${unit}${arrow}</div>`;
+}
+
 function buildHTML(report: MonthlyReport): string {
   const bs = report.behavior_stats;
+  const bd = report.behavior_delta;
 
   // 꼬리질문 비율 바 색상 결정
   const followUpBarClass =
@@ -399,6 +409,16 @@ function buildHTML(report: MonthlyReport): string {
       margin-left: 0.2rem;
     }
 
+    .behavior-delta {
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-top: 0.35rem;
+    }
+
+    .behavior-delta.positive { color: var(--success); }
+    .behavior-delta.negative { color: var(--danger); }
+    .behavior-delta.neutral  { color: var(--text-muted); }
+
     /* 꼬리질문 비율 바 */
     .followup-bar-wrap {
       background: var(--surface-2);
@@ -494,10 +514,12 @@ function buildHTML(report: MonthlyReport): string {
     <!-- 행동 분석 -->
     <section class="section">
       <h2 class="section-title">🔍 행동 분석</h2>
+      ${report.prev_month ? `<p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1rem;">비교 기준: ${report.prev_month}</p>` : ''}
       <div class="behavior-grid">
         <div class="behavior-card">
           <div class="behavior-label">대화당 평균 교환</div>
           <div class="behavior-value">${bs.avg_messages_per_conv}<span class="behavior-unit">회</span></div>
+          ${formatHtmlDelta(bd?.avg_messages_per_conv ?? null, '회', 1)}
         </div>
         <div class="behavior-card">
           <div class="behavior-label">꼬리질문 비율</div>
@@ -505,14 +527,17 @@ function buildHTML(report: MonthlyReport): string {
           <div class="followup-bar-wrap">
             <div class="followup-bar ${followUpBarClass}" style="width: ${Math.min(bs.follow_up_rate, 100)}%"></div>
           </div>
+          ${formatHtmlDelta(bd?.follow_up_rate ?? null, '%p')}
         </div>
         <div class="behavior-card">
           <div class="behavior-label">평균 질문 길이</div>
           <div class="behavior-value">${bs.avg_user_chars_per_conv.toLocaleString()}<span class="behavior-unit">자</span></div>
+          ${formatHtmlDelta(bd?.avg_user_chars_per_conv ?? null, '자')}
         </div>
         <div class="behavior-card">
           <div class="behavior-label">탐색 주제 다양성</div>
           <div class="behavior-value">${bs.exploration_breadth}<span class="behavior-unit">개</span></div>
+          ${formatHtmlDelta(bd?.exploration_breadth ?? null, '개')}
         </div>
       </div>
       ${

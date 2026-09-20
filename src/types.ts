@@ -46,6 +46,13 @@ export interface BehaviorStats {
   }>;
 }
 
+export interface BehaviorDelta {
+  avg_messages_per_conv: number | null;    // null = 전월 데이터 없음
+  follow_up_rate: number | null;
+  avg_user_chars_per_conv: number | null;
+  exploration_breadth: number | null;
+}
+
 export interface MonthlyReport {
   month: string;
   top_topics: Array<{ topic: string; count: number; percentage: number }>;
@@ -55,6 +62,8 @@ export interface MonthlyReport {
   improvements: string[];
   behavior_stats: BehaviorStats;
   generated_at: string;
+  prev_month: string | null;         // e.g. "2026-08", null if no prev data
+  behavior_delta: BehaviorDelta | null;
 }
 
 export interface ValidationResult {

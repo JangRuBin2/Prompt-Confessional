@@ -165,7 +165,12 @@ program
         }
 
         const summaries = await summarizeByTopics(allConvs, allClassifications, client);
-        const report = await generateMonthlyReport(month, allConvs, allClassifications, summaries, client);
+
+        // 이전 달 리포트 로드 (비교용)
+        const prevMonth = getPrevMonth(month);
+        const prevReport = storage.getLatestReport(prevMonth);
+
+        const report = await generateMonthlyReport(month, allConvs, allClassifications, summaries, client, prevReport);
         storage.saveReport(report);
 
         printMonthlyReport(report);
@@ -332,7 +337,12 @@ program
       console.log(`  총 ${chalk.yellow(String(classifications.length))}개 분류된 대화로 리포트를 생성합니다...\n`);
 
       const summaries = await summarizeByTopics(conversations, classifications, client);
-      const report = await generateMonthlyReport(options.month, conversations, classifications, summaries, client);
+
+      // 이전 달 리포트 로드 (비교용)
+      const prevMonth = getPrevMonth(options.month);
+      const prevReport = storage.getLatestReport(prevMonth);
+
+      const report = await generateMonthlyReport(options.month, conversations, classifications, summaries, client, prevReport);
 
       storage.saveReport(report);
 
@@ -438,6 +448,12 @@ program
 
 function isValidMonth(month: string): boolean {
   return /^\d{4}-\d{2}$/.test(month);
+}
+
+function getPrevMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 2, 1); // month is 1-based, Date month is 0-based
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 async function checkOllamaHealth(client: ILLMClient): Promise<void> {

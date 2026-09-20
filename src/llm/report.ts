@@ -1,4 +1,4 @@
-import { ParsedMessage, ClassificationResult, SummaryResult, MonthlyReport, BehaviorStats } from '../types';
+import { ParsedMessage, ClassificationResult, SummaryResult, MonthlyReport, BehaviorStats, BehaviorDelta } from '../types';
 import type { ILLMClient } from './interface';
 import { DEFAULT_TOPIC, ROLE } from '../constants';
 import { ReportLLMResultSchema, ReportLLMResultType } from '../schemas';
@@ -63,12 +63,34 @@ function computeBehaviorStats(
   };
 }
 
+// 전월 대비 행동 지표 변화량 계산
+function computeBehaviorDelta(
+  current: BehaviorStats,
+  prev: BehaviorStats | null
+): BehaviorDelta {
+  if (!prev) {
+    return {
+      avg_messages_per_conv: null,
+      follow_up_rate: null,
+      avg_user_chars_per_conv: null,
+      exploration_breadth: null,
+    };
+  }
+  return {
+    avg_messages_per_conv: Math.round((current.avg_messages_per_conv - prev.avg_messages_per_conv) * 10) / 10,
+    follow_up_rate: current.follow_up_rate - prev.follow_up_rate,
+    avg_user_chars_per_conv: current.avg_user_chars_per_conv - prev.avg_user_chars_per_conv,
+    exploration_breadth: current.exploration_breadth - prev.exploration_breadth,
+  };
+}
+
 export async function generateMonthlyReport(
   month: string,
   convs: ParsedMessage[],            // 행동 지표 계산용 원본 대화 목록
   classifications: ClassificationResult[],
   summaries: SummaryResult[],
-  client: ILLMClient
+  client: ILLMClient,
+  prevReport: MonthlyReport | null = null
 ): Promise<MonthlyReport> {
   console.log(`[Report] ${month} 월간 리포트 생성 중...`);
 
@@ -81,6 +103,7 @@ export async function generateMonthlyReport(
 
   // 행동 지표는 try 블록 밖에서 계산해 fallback에서도 사용
   const stats = computeBehaviorStats(convs, classifications);
+  const delta = computeBehaviorDelta(stats, prevReport?.behavior_stats ?? null);
 
   const topicDepthText = stats.topic_depth
     .map((t) => `  - ${t.topic}: 평균 ${t.avg_messages}회 교환`)
@@ -89,6 +112,13 @@ export async function generateMonthlyReport(
   const topicSummaryText = sortedSummaries
     .map((t) => `  - ${t.topic} (${t.conversation_count}건): ${t.summary}`)
     .join('\n');
+
+  const prevMonthBlock = prevReport
+    ? `\n[전월(${prevReport.month}) 대비 변화]
+- 꼬리질문 비율: ${prevReport.behavior_stats.follow_up_rate}% → ${stats.follow_up_rate}% (${delta.follow_up_rate! >= 0 ? '+' : ''}${delta.follow_up_rate}%p)
+- 대화당 평균 교환: ${prevReport.behavior_stats.avg_messages_per_conv}회 → ${stats.avg_messages_per_conv}회
+- 탐색 주제 수: ${prevReport.behavior_stats.exploration_breadth}개 → ${stats.exploration_breadth}개\n`
+    : '';
 
   const prompt = `당신은 사용자의 AI 활용 행동 패턴을 분석하는 애널리스트입니다.
 아래는 ${month}에 사용자가 AI와 나눈 대화의 정량 지표와 주제 요약입니다.
@@ -99,7 +129,7 @@ export async function generateMonthlyReport(
 - 꼬리질문 비율: ${stats.follow_up_rate}% (한 주제를 여러 번 주고받은 대화 비율)
 - 사용자 평균 질문 길이: ${stats.avg_user_chars_per_conv}자 (길수록 구체적 질문 경향)
 - 탐색 주제 다양성: ${stats.exploration_breadth}개 주제
-
+${prevMonthBlock}
 [주제별 탐구 깊이 — 평균 메시지 교환 수 기준]
 ${topicDepthText}
 
@@ -121,6 +151,7 @@ ${topicSummaryText}
 - 나쁜 예시: "Python 비동기 프로그래밍에 대한 내용이 구체적으로 설명되어있다" (← AI 응답 묘사, 절대 금지)
 - improvements는 맹목적 칭찬 없이, 행동 데이터를 근거로 구체적 개선 방향을 제시하세요.
 - top_topics: Top 5, count는 대화 수, percentage는 정수 퍼센트
+- 전월 데이터가 있으면 변화 추이를 well_done/improvements에 반영하세요. ("지난 달보다 꼬리질문 비율이 28%p 높아졌다" 등)
 - 모든 내용 한국어
 `;
 
@@ -155,6 +186,8 @@ ${topicSummaryText}
       improvements,
       behavior_stats: stats,
       generated_at: new Date().toISOString(),
+      prev_month: prevReport?.month ?? null,
+      behavior_delta: computeBehaviorDelta(stats, prevReport?.behavior_stats ?? null),
     };
   } catch (error) {
     console.error(`[Report] LLM 실패, 기본 리포트 사용: ${(error as Error).message}`);
@@ -171,6 +204,8 @@ ${topicSummaryText}
       improvements: defaultImprovements(),
       behavior_stats: stats,
       generated_at: new Date().toISOString(),
+      prev_month: prevReport?.month ?? null,
+      behavior_delta: computeBehaviorDelta(stats, prevReport?.behavior_stats ?? null),
     };
   }
 }

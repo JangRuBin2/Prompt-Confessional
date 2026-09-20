@@ -21,6 +21,17 @@ function printHeader(title: string): void {
 }
 
 /**
+ * 전월 대비 변화량 포맷 헬퍼
+ */
+function formatDelta(delta: number | null, unit = '', decimals = 0): string {
+  if (delta === null) return chalk.gray('(전월 없음)');
+  const sign = delta >= 0 ? '+' : '';
+  const val = decimals > 0 ? delta.toFixed(decimals) : String(Math.round(delta));
+  const color = delta > 0 ? chalk.green : delta < 0 ? chalk.red : chalk.gray;
+  return color(`${sign}${val}${unit}`);
+}
+
+/**
  * 월간 리포트 CLI 출력
  */
 export function printMonthlyReport(report: MonthlyReport): void {
@@ -33,6 +44,20 @@ export function printMonthlyReport(report: MonthlyReport): void {
   console.log(`  총 대화 수     : ${chalk.yellow(report.total_conversations.toLocaleString())} 건`);
   console.log(`  총 예상 토큰   : ${chalk.yellow(report.total_tokens.toLocaleString())} 토큰`);
   console.log(`  리포트 생성    : ${chalk.gray(new Date(report.generated_at).toLocaleString('ko-KR'))}`);
+
+  // 행동 지표
+  console.log('');
+  console.log(chalk.bold('  행동 지표'));
+  printDivider();
+  if (report.prev_month) {
+    console.log(`  비교 기준: ${chalk.gray(report.prev_month)}`);
+  }
+  const bs = report.behavior_stats;
+  const bd = report.behavior_delta;
+  console.log(`  꼬리질문 비율   : ${chalk.cyan(`${bs.follow_up_rate}%`)}  ${formatDelta(bd?.follow_up_rate ?? null, '%p')}`);
+  console.log(`  대화당 평균 교환 : ${chalk.cyan(`${bs.avg_messages_per_conv}회`)}  ${formatDelta(bd?.avg_messages_per_conv ?? null, '', 1)}`);
+  console.log(`  평균 질문 길이   : ${chalk.cyan(`${bs.avg_user_chars_per_conv.toLocaleString()}자`)}  ${formatDelta(bd?.avg_user_chars_per_conv ?? null, '자')}`);
+  console.log(`  탐색 주제 다양성 : ${chalk.cyan(`${bs.exploration_breadth}개`)}  ${formatDelta(bd?.exploration_breadth ?? null, '개')}`);
 
   // Top 5 주제
   console.log('');
