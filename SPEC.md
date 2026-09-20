@@ -51,7 +51,33 @@
 언어: TypeScript/Node.js
 저장소: SQLite 또는 단순 JSON 파일 (외부 DB 불필요)
 파싱: Claude/ChatGPT export JSON 스키마 분석 후 정규화 스크립트
-결과 확인: CLI 출력 우선, 필요 시 간단한 로컬 정적 HTML로 시각화 6. 데이터 흐름 상세
+결과 확인: CLI 출력 우선, 필요 시 간단한 로컬 정적 HTML로 시각화
+
+5-1. 코드 품질 원칙
+- 플랫폼 식별자('claude', 'chatgpt')·역할 문자열·Ollama 기본값 등 반복 사용되는 리터럴은
+  src/constants.ts 에서 상수로 일괄 관리한다.
+- 외부 경계(export JSON 파싱, Ollama API 응답, LLM JSON 출력)에는 Zod 스키마(src/schemas.ts)를
+  적용해 런타임 타입 안전성을 확보한다. 내부 로직 간 전달은 TypeScript 타입만으로 충분하다.
+- 새로운 외부 데이터 소스나 LLM 출력 포맷이 추가될 때마다 schemas.ts 에 스키마를 먼저 정의한 뒤
+  구현 코드를 작성한다 (Schema-First 원칙).
+
+5-3. 비교 기준 전략 (자기객관화 지원)
+1단계 (로컬): 이전 달 행동 지표와 자동 비교. 예: "지난 달 꼬리질문 비율 45% → 이번 달 73%, +28%p 향상"
+2단계 (상용화):
+  - 사용자 동의 하에 행동 지표(conversation_id·내용 제외)를 익명 집계 서버에 전송
+  - 집계 서버는 지표 분포(평균, 중앙값, 백분위)만 저장 — 원본 대화 비공개
+  - 리포트에 백분위 표시: "꼬리질문 비율 73% — 전체 사용자 상위 18%"
+  - 구현 시 추가할 것: POST /api/metrics (익명 지표), GET /api/benchmarks (집계 통계)
+
+5-2. 확장성 전략 (로컬 → 상용화)
+- LLM 호출은 ILLMClient 인터페이스를 통해서만 이루어지며, LLM_PROVIDER 환경변수 하나로
+  구현체를 교체한다 (현재: ollama, 2단계: claude | openai 추가 예정).
+- DB 접근은 IStorage 인터페이스를 통해서만 이루어지며, getStorage() 팩토리를 통해 단일
+  인스턴스를 공유한다. 2단계에서 SQLite → Postgres 전환 시 Storage 구현체만 교체한다.
+- 새 LLM 제공자나 DB 백엔드 추가 시: (1) 구현 클래스 작성 → (2) factory switch 케이스 추가
+  → (3) 환경변수 값 문서화. index.ts 등 상위 코드는 수정 불필요.
+
+6. 데이터 흐름 상세
 업로드(로컬): Claude/ChatGPT 설정에서 내려받은 export JSON을 로컬 폴더에 저장
 파싱·정규화: 두 플랫폼의 서로 다른 JSON 구조를 {date, role, content, char_count} 공통 스키마로 변환
 1차 LLM 처리 (분류): 대화 단위로 로컬 LLM에 "주제 태그 + 예상 토큰 수" 추출 요청 → JSON 강제 출력
