@@ -1,0 +1,14 @@
+node_modules/
+dist/
+output/
+data/myLLM.db
+data/myLLM.db-wal
+data/myLLM.db-shm
+data/myLLM.db-journal
+data/manifest.json
+data/conversations*.json
+data/conversations*.zip
+*.js.map
+.env
+.DS_Store
+*.log
