@@ -1,0 +1,366 @@
+[
+  {
+    "id": "chatgpt-conv-001",
+    "title": "JavaScript 프로미스와 async/await 차이",
+    "create_time": 1704153600.0,
+    "update_time": 1704156000.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-001-1"]
+      },
+      "node-001-1": {
+        "id": "node-001-1",
+        "message": {
+          "id": "msg-001-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["JavaScript에서 Promise와 async/await의 차이점이 뭔가요? 언제 어떤 걸 써야 해요?"]
+          },
+          "create_time": 1704153600.0
+        },
+        "parent": "node-root",
+        "children": ["node-001-2"]
+      },
+      "node-001-2": {
+        "id": "node-001-2",
+        "message": {
+          "id": "msg-001-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Promise와 async/await는 본질적으로 같은 비동기 처리를 다른 문법으로 쓰는 겁니다.\n\n**Promise 방식:**\n```javascript\nfetch('/api/user')\n  .then(res => res.json())\n  .then(user => {\n    return fetch(`/api/posts?userId=${user.id}`);\n  })\n  .then(res => res.json())\n  .catch(err => console.error(err));\n```\n\n**async/await 방식 (같은 코드):**\n```javascript\nasync function getUser() {\n  try {\n    const res = await fetch('/api/user');\n    const user = await res.json();\n    const postsRes = await fetch(`/api/posts?userId=${user.id}`);\n    return await postsRes.json();\n  } catch (err) {\n    console.error(err);\n  }\n}\n```\n\n**선택 기준:**\n- 여러 비동기 작업이 순차적 → async/await (가독성 좋음)\n- 병렬 실행 → `Promise.all([...])` 사용\n- 콜백 기반 라이브러리 래핑 → Promise 생성자"]
+          },
+          "create_time": 1704153660.0
+        },
+        "parent": "node-001-1",
+        "children": ["node-001-3"]
+      },
+      "node-001-3": {
+        "id": "node-001-3",
+        "message": {
+          "id": "msg-001-3",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Promise.all과 Promise.allSettled의 차이도 알려줘"]
+          },
+          "create_time": 1704154200.0
+        },
+        "parent": "node-001-2",
+        "children": ["node-001-4"]
+      },
+      "node-001-4": {
+        "id": "node-001-4",
+        "message": {
+          "id": "msg-001-4",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["핵심 차이는 실패 처리 방식입니다:\n\n**Promise.all**: 하나라도 reject되면 즉시 전체 실패\n```javascript\nPromise.all([fetchA(), fetchB(), fetchC()])\n  .then(([a, b, c]) => console.log(a, b, c))\n  .catch(err => console.error('하나라도 실패:', err));\n```\n\n**Promise.allSettled**: 모두 완료될 때까지 기다리고, 각 결과의 성공/실패를 알 수 있음\n```javascript\nPromise.allSettled([fetchA(), fetchB(), fetchC()])\n  .then(results => {\n    results.forEach(result => {\n      if (result.status === 'fulfilled') {\n        console.log('성공:', result.value);\n      } else {\n        console.log('실패:', result.reason);\n      }\n    });\n  });\n```\n\n**언제 쓸까?**\n- 모든 요청이 반드시 성공해야 할 때 → `Promise.all`\n- 일부 실패해도 나머지 결과는 처리해야 할 때 → `Promise.allSettled`"]
+          },
+          "create_time": 1704154260.0
+        },
+        "parent": "node-001-3",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-002",
+    "title": "Python 데이터 분석 pandas 기초",
+    "create_time": 1704326400.0,
+    "update_time": 1704330000.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-002-1"]
+      },
+      "node-002-1": {
+        "id": "node-002-1",
+        "message": {
+          "id": "msg-002-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["pandas DataFrame에서 자주 쓰는 데이터 정제 작업들을 예시와 함께 알려줘"]
+          },
+          "create_time": 1704326400.0
+        },
+        "parent": "node-root",
+        "children": ["node-002-2"]
+      },
+      "node-002-2": {
+        "id": "node-002-2",
+        "message": {
+          "id": "msg-002-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["pandas 데이터 정제 핵심 작업들입니다:\n\n```python\nimport pandas as pd\nimport numpy as np\n\ndf = pd.read_csv('data.csv')\n\n# 1. 결측값 처리\ndf.isnull().sum()          # 결측값 개수 확인\ndf.dropna()                 # 결측값 있는 행 제거\ndf.fillna(0)                # 0으로 채우기\ndf['age'].fillna(df['age'].median())  # 중앙값으로 채우기\n\n# 2. 중복 제거\ndf.duplicated().sum()       # 중복 행 수 확인\ndf.drop_duplicates()        # 중복 제거\ndf.drop_duplicates(subset=['email'])  # 특정 컬럼 기준\n\n# 3. 데이터 타입 변환\ndf['date'] = pd.to_datetime(df['date'])\ndf['age'] = df['age'].astype(int)\n\n# 4. 이상값 처리 (IQR 방법)\nQ1 = df['value'].quantile(0.25)\nQ3 = df['value'].quantile(0.75)\nIQR = Q3 - Q1\ndf_clean = df[~((df['value'] < Q1 - 1.5*IQR) | (df['value'] > Q3 + 1.5*IQR))]\n\n# 5. 컬럼명 정제\ndf.columns = df.columns.str.lower().str.replace(' ', '_')\n\n# 6. 문자열 정제\ndf['name'] = df['name'].str.strip().str.title()\n```"]
+          },
+          "create_time": 1704326460.0
+        },
+        "parent": "node-002-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-003",
+    "title": "이력서 자기소개서 첨삭",
+    "create_time": 1704499200.0,
+    "update_time": 1704502800.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-003-1"]
+      },
+      "node-003-1": {
+        "id": "node-003-1",
+        "message": {
+          "id": "msg-003-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["다음 자기소개서 초안을 첨삭해줘. 백엔드 개발자 신입 지원용이야:\n\n저는 개발을 좋아하는 사람입니다. 특히 백엔드 개발에 관심이 많습니다. 대학교에서 컴퓨터공학을 전공했고 여러 프로젝트를 했습니다. 저는 열심히 하겠습니다."]
+          },
+          "create_time": 1704499200.0
+        },
+        "parent": "node-root",
+        "children": ["node-003-2"]
+      },
+      "node-003-2": {
+        "id": "node-003-2",
+        "message": {
+          "id": "msg-003-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["현재 초안의 문제점과 개선된 버전을 드릴게요:\n\n**문제점:**\n- 구체성 없음: '여러 프로젝트'가 어떤 프로젝트인지, 어떤 기술을 썼는지 불명확\n- 지원 동기 부재: 왜 이 회사인지, 왜 백엔드인지 이유 없음\n- 차별성 없음: 누구나 쓸 수 있는 문장들\n\n**개선된 예시:**\n\n---\n3년간 Spring Boot와 MySQL로 팀 프로젝트 3개를 리드하며 API 설계와 성능 최적화에 깊은 관심을 갖게 되었습니다.\n\n대표 프로젝트로, 대학 동아리 회원 관리 시스템을 직접 설계하고 구현했습니다. REST API 30여 개를 설계하고, N+1 쿼리 문제를 JPA fetch join으로 해결해 조회 속도를 70% 개선한 경험이 가장 기억에 남습니다.\n\n귀사를 지원한 이유는 [구체적 이유]입니다. 빠르게 성장하는 팀에서 실제 트래픽을 다루는 경험을 쌓고, 3년 안에 시스템 설계를 주도할 수 있는 개발자로 성장하겠습니다.\n---\n\n이 구조(경험 → 구체적 성과 → 지원 동기 → 목표)를 참고해 본인 내용으로 채워보세요."]
+          },
+          "create_time": 1704499320.0
+        },
+        "parent": "node-003-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-004",
+    "title": "Linux 서버 기본 명령어 학습",
+    "create_time": 1704672000.0,
+    "update_time": 1704675600.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-004-1"]
+      },
+      "node-004-1": {
+        "id": "node-004-1",
+        "message": {
+          "id": "msg-004-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Linux 서버 관리할 때 자주 쓰는 명령어 모음 알려줘. 파일 관리, 프로세스, 네트워크 위주로."]
+          },
+          "create_time": 1704672000.0
+        },
+        "parent": "node-root",
+        "children": ["node-004-2"]
+      },
+      "node-004-2": {
+        "id": "node-004-2",
+        "message": {
+          "id": "msg-004-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Linux 서버 관리 필수 명령어 모음입니다:\n\n## 파일 관리\n```bash\nls -lah                    # 숨김파일 포함, 사람이 읽기 좋은 크기\nfind / -name '*.log' -mtime -7  # 7일 이내 수정된 .log 파일\ndu -sh /var/log/*          # 디렉토리별 용량\ndf -h                      # 디스크 사용량\ntail -f /var/log/nginx/access.log  # 실시간 로그 확인\ngrep -r 'ERROR' /var/log/ --include='*.log'  # 에러 로그 검색\n```\n\n## 프로세스 관리\n```bash\ntop / htop                 # 실시간 프로세스 모니터링\nps aux | grep nginx        # 특정 프로세스 찾기\nkill -9 <PID>              # 강제 종료\nnohup python app.py &      # 백그라운드 실행\njournalctl -u nginx -f     # systemd 서비스 로그\nsystemctl status/start/stop/restart nginx\n```\n\n## 네트워크\n```bash\nss -tlnp                   # 열린 포트 확인 (netstat 대체)\ncurl -I https://example.com  # HTTP 헤더 확인\nping / traceroute          # 연결 테스트\nwget -O /dev/null http://... # 다운로드 속도 테스트\niptables -L -n             # 방화벽 규칙 확인\n```"]
+          },
+          "create_time": 1704672120.0
+        },
+        "parent": "node-004-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-005",
+    "title": "Git 브랜치 전략 및 협업 워크플로",
+    "create_time": 1704844800.0,
+    "update_time": 1704848400.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-005-1"]
+      },
+      "node-005-1": {
+        "id": "node-005-1",
+        "message": {
+          "id": "msg-005-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Git Flow와 GitHub Flow의 차이를 설명해줘. 실제 팀 프로젝트에서 어떤 걸 써야 할지 조언도 부탁해."]
+          },
+          "create_time": 1704844800.0
+        },
+        "parent": "node-root",
+        "children": ["node-005-2"]
+      },
+      "node-005-2": {
+        "id": "node-005-2",
+        "message": {
+          "id": "msg-005-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["두 전략의 핵심 차이와 선택 가이드입니다:\n\n## Git Flow\n**구조**: main(운영) + develop(개발) + feature/release/hotfix 브랜치\n\n```\nmain ←───── release/1.0 ←─── develop ←── feature/login\n  ↑                                ↑── feature/signup\n  └── hotfix/critical-bug\n```\n\n**장점**: 릴리즈 관리가 명확, 롤백이 쉬움\n**단점**: 브랜치가 많아 복잡, CI/CD와 잘 안 맞음\n**적합**: 명확한 버전 릴리즈 사이클이 있는 제품 (모바일 앱, SaaS 정기 배포)\n\n## GitHub Flow\n**구조**: main(항상 배포 가능) + feature 브랜치\n```\nmain ←── PR ←── feature/add-payment\n     ←── PR ←── feature/fix-auth\n```\n**장점**: 단순함, 빠른 CI/CD에 최적\n**단점**: 대규모 릴리즈 조율이 어려움\n**적합**: 웹 서비스, SaaS, 지속적 배포 환경\n\n## 추천\n- 5인 이하 스타트업/사이드프로젝트 → **GitHub Flow**\n- 릴리즈 주기가 고정된 팀 → **Git Flow**\n- 요즘은 대부분 GitHub Flow에 환경별 브랜치(main/staging)만 추가하는 형태를 씁니다"]
+          },
+          "create_time": 1704844920.0
+        },
+        "parent": "node-005-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-006",
+    "title": "머신러닝 모델 평가 지표 이해",
+    "create_time": 1705017600.0,
+    "update_time": 1705021200.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-006-1"]
+      },
+      "node-006-1": {
+        "id": "node-006-1",
+        "message": {
+          "id": "msg-006-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["분류 모델에서 Accuracy, Precision, Recall, F1-score의 차이를 직관적으로 설명해줘. 언제 어떤 걸 봐야 해?"]
+          },
+          "create_time": 1705017600.0
+        },
+        "parent": "node-root",
+        "children": ["node-006-2"]
+      },
+      "node-006-2": {
+        "id": "node-006-2",
+        "message": {
+          "id": "msg-006-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["암 진단 모델을 예시로 직관적으로 설명할게요:\n\n## Accuracy (정확도)\n전체 예측 중 맞춘 비율\n- **문제**: 암 환자가 1%인 데이터셋에서 모두 '정상'으로 예측해도 99% 정확도\n- **언제**: 클래스가 균형잡힌 경우에만 유용\n\n## Precision (정밀도)\n'암이다'라고 예측한 것 중 실제로 암인 비율\n- **높으면**: 오진(정상→암 판정)이 적음\n- **언제**: 거짓 양성의 비용이 클 때 (불필요한 수술 방지)\n\n## Recall (재현율)\n실제 암 환자 중 모델이 찾아낸 비율\n- **높으면**: 암 환자를 놓치지 않음\n- **언제**: 거짓 음성의 비용이 클 때 (암을 놓치면 안 될 때)\n\n## F1-score\nPrecision과 Recall의 조화 평균 → 둘 다 중요할 때\n\n**선택 가이드:**\n| 상황 | 지표 |\n|------|------|\n| 스팸 필터 | Precision (정상 메일을 스팸으로 막으면 안 됨) |\n| 암 진단 | Recall (환자를 놓치면 안 됨) |\n| 불균형 데이터 | F1-score |\n| 균형 데이터 | Accuracy OK |"]
+          },
+          "create_time": 1705017720.0
+        },
+        "parent": "node-006-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-007",
+    "title": "스타트업 아이디어 검증 방법",
+    "create_time": 1705190400.0,
+    "update_time": 1705194000.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-007-1"]
+      },
+      "node-007-1": {
+        "id": "node-007-1",
+        "message": {
+          "id": "msg-007-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["새로운 앱 아이디어가 있는데 시장 검증을 어떻게 해야 할지 모르겠어. 개발 시작 전에 검증하는 방법 알려줘."]
+          },
+          "create_time": 1705190400.0
+        },
+        "parent": "node-root",
+        "children": ["node-007-2"]
+      },
+      "node-007-2": {
+        "id": "node-007-2",
+        "message": {
+          "id": "msg-007-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["개발 전 아이디어 검증 단계별 방법입니다:\n\n## 1단계: 문제 정의 (1주)\n- 해결하려는 문제가 실제로 존재하는가?\n- 타겟 사용자 5~10명과 인터뷰: '지금 이 문제를 어떻게 해결하고 있어요?'\n- 현재 해결책이 있다면 → 그게 경쟁자\n\n## 2단계: 랜딩 페이지 테스트 (1~2주)\n- 제품 없이 랜딩 페이지만 만들기 (Notion, Carrd, Webflow)\n- '출시 알림 받기' 이메일 수집\n- 유료 광고 1~2만원으로 클릭률 확인 (1% 이상이면 관심 있음)\n\n## 3단계: Fake Door 테스트\n- 결제 버튼 → '현재 대기 중입니다' 메시지\n- 실제로 결제하려는 사람 수 측정\n\n## 4단계: MVP (4~8주)\n- 핵심 기능 1개만 구현\n- 초기 사용자 10명에게 무료로 제공\n- NPS(순추천지수) 측정: '친구에게 추천하겠어요?' 0~10점\n\n**핵심 원칙**: '사람들이 원할 것 같다'가 아니라 '실제로 돈을 내거나 시간을 쓰는가'를 확인"]
+          },
+          "create_time": 1705190520.0
+        },
+        "parent": "node-007-1",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "chatgpt-conv-008",
+    "title": "CSS Grid 레이아웃 완전 정리",
+    "create_time": 1705363200.0,
+    "update_time": 1705366800.0,
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-008-1"]
+      },
+      "node-008-1": {
+        "id": "node-008-1",
+        "message": {
+          "id": "msg-008-1",
+          "author": { "role": "user" },
+          "content": {
+            "content_type": "text",
+            "parts": ["CSS Grid를 Flexbox와 비교해서 설명해줘. 각각 언제 써야 하고 Grid의 핵심 속성들도 알려줘."]
+          },
+          "create_time": 1705363200.0
+        },
+        "parent": "node-root",
+        "children": ["node-008-2"]
+      },
+      "node-008-2": {
+        "id": "node-008-2",
+        "message": {
+          "id": "msg-008-2",
+          "author": { "role": "assistant" },
+          "content": {
+            "content_type": "text",
+            "parts": ["Flexbox vs Grid 핵심 차이와 Grid 사용법입니다:\n\n## Flexbox vs Grid\n| 특징 | Flexbox | Grid |\n|------|---------|------|\n| 차원 | 1차원 (행 또는 열) | 2차원 (행 + 열) |\n| 용도 | 컴포넌트 내부 정렬 | 페이지 전체 레이아웃 |\n| 기준 | 컨텐츠 기준 | 레이아웃 기준 |\n\n**언제 쓸까?**\n- 네비게이션 바, 버튼 그룹 → Flexbox\n- 대시보드, 카드 그리드, 전체 페이지 레이아웃 → Grid\n\n## CSS Grid 핵심 속성\n```css\n.container {\n  display: grid;\n  \n  /* 3열: 1fr은 남은 공간 균등 분배 */\n  grid-template-columns: 200px 1fr 1fr;\n  \n  /* repeat 단축 */\n  grid-template-columns: repeat(3, 1fr);\n  \n  /* 자동으로 최소 200px 이상 컬럼 채우기 (반응형) */\n  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\n  \n  gap: 16px;  /* 행/열 간격 */\n}\n\n/* 특정 아이템이 여러 셀 차지 */\n.hero {\n  grid-column: 1 / 3;  /* 1~3열 */\n  grid-row: 1 / 2;\n}\n```\n\n`auto-fill`과 `minmax`의 조합이 반응형 그리드의 핵심입니다."]
+          },
+          "create_time": 1705363320.0
+        },
+        "parent": "node-008-1",
+        "children": []
+      }
+    }
+  }
+]
