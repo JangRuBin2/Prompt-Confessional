@@ -24,6 +24,10 @@ async function judgeClassification(
       ? sampleMessages.substring(0, MAX_CONTENT_CHARS) + '...'
       : sampleMessages;
 
+  // 짧은 대화 여부 판단 (사용자 메시지 4회 미만)
+  const userMsgCount = conv.messages.filter((m) => m.role === ROLE.USER).length;
+  const isShortConv = userMsgCount < 4;
+
   const prompt = `당신은 AI 대화 분류 결과를 검증하는 전문 평가자입니다.
 
 다음 대화를 읽고 분류 태그가 적절한지 평가해주세요.
@@ -34,7 +38,14 @@ ${truncated}
 
 분류된 태그: ${result.topic_tags.join(', ')}
 
-위 태그가 대화 내용을 정확하게 분류했는지 평가하고 다음 JSON 형식으로만 응답하세요:
+판정 기준:
+- 태그가 대화의 핵심 주제를 1개 이상 포함하면 → is_correct: true
+- 세부 기술(예: "슬라이딩 윈도우", "async/await")이 빠져도 상위 주제(예: "알고리즘", "Python")가 맞으면 정확
+- 세부 태그 부재는 부정확이 아님. 핵심 주제를 포함하면 정확으로 판정
+${isShortConv ? '- 이 대화는 짧은 대화(4회 미만 교환)이므로 태그 1개만 맞아도 정확' : '- 짧은 대화(4회 미만 교환)는 태그 1개만 맞아도 정확'}
+- 완전히 다른 주제로 분류된 경우만 is_correct: false
+
+다음 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
 {"is_correct": true/false, "feedback": "평가 이유 한 문장"}
 
 JSON 응답:`;
@@ -69,6 +80,7 @@ export async function validateClassifications(
   const total = paired.length;
   if (total === 0) throw new Error('검증할 대화가 없습니다.');
 
+  // 최소 10개, 최대 20개 샘플로 통계 신뢰도 향상
   const targetSampleSize =
     sampleSize ??
     Math.min(

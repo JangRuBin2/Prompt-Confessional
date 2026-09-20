@@ -22,6 +22,12 @@ async function classifyOne(
       ? conversationText.substring(0, LLM_CLASSIFY_MAX_CHARS) + '...'
       : conversationText;
 
+  // 짧은 대화(사용자 메시지 3개 이하)는 핵심 주제만 1~2개로 제한
+  const userMsgCount = conv.messages.filter((m) => m.role === 'user').length;
+  const tagGuidance = userMsgCount <= 3
+    ? '- topic_tags: 1~2개 (짧은 대화이므로 핵심 주제만)'
+    : `- topic_tags: 최대 ${LLM_CLASSIFY_MAX_TAGS}개, 핵심 주제 위주`;
+
   const prompt = `다음 AI 대화의 주제를 분류해주세요.
 
 대화 제목: ${conv.title ?? '(제목 없음)'}
@@ -32,7 +38,7 @@ ${truncatedText}
 {"topic_tags": ["주제1", "주제2"], "estimated_tokens": 숫자}
 
 규칙:
-- topic_tags: 최대 ${LLM_CLASSIFY_MAX_TAGS}개, 반드시 한국어로 (예: "Python 개발", "글쓰기", "데이터 분석")
+${tagGuidance}, 반드시 한국어로 (예: "Python 개발", "글쓰기", "데이터 분석")
 - estimated_tokens: 전체 대화 예상 토큰 수 (한글 1자 ≈ 2토큰, 영문 1단어 ≈ 1토큰)
 - 반드시 유효한 JSON만 출력
 

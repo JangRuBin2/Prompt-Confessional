@@ -9,10 +9,25 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// zip 매직 넘버(PK\x03\x04) 검증으로 Content-Type 오판 방지
+function isZipBuffer(buf: Buffer): boolean {
+  return buf.length >= 4 &&
+    buf[0] === 0x50 && buf[1] === 0x4B &&
+    buf[2] === 0x03 && buf[3] === 0x04;
+}
+
 async function waitForDownload(downloadsDir: string, before: Set<string>, timeoutMs = 120_000): Promise<string> {
   const deadline = Date.now() + timeoutMs;
+  let lastLogAt = 0;
 
   while (Date.now() < deadline) {
+    // 10초 단위로 경과 시간 출력
+    const elapsed = Math.floor((Date.now() - (deadline - timeoutMs)) / 1000);
+    if (elapsed - lastLogAt >= 10) {
+      console.log(`  대기 중... ${elapsed}초 경과 (최대 ${timeoutMs / 1000}초)`);
+      lastLogAt = elapsed;
+    }
+
     const entries = fs.readdirSync(downloadsDir);
     const newZips = entries.filter(
       (f) => !before.has(f) && f.endsWith('.zip') && !f.endsWith('.crdownload')
@@ -113,16 +128,20 @@ export async function downloadFromManifest(manifestPath: string): Promise<string
       },
     });
 
-    const contentType = response.headers.get('content-type') ?? '';
-    const isZip = response.ok && (
-      contentType.includes('zip') ||
-      contentType.includes('octet-stream') ||
-      contentType.includes('binary')
-    );
+    const arrayBuf = await response.arrayBuffer();
+    zipBuffer = Buffer.from(arrayBuf);
 
-    if (isZip) {
-      zipBuffer = Buffer.from(await response.arrayBuffer());
-    } else {
+    if (!isZipBuffer(zipBuffer)) {
+      // zip 매직 넘버 불일치 → 만료된 링크 여부 먼저 확인
+      const bodyText = Buffer.from(arrayBuf).toString('utf-8', 0, 1000); // 앞 1KB만 확인
+      const isExpired = bodyText.includes('expired') || bodyText.includes('만료') || bodyText.includes('invalid');
+      if (isExpired) {
+        throw new Error(
+          `내보내기 링크가 만료되었습니다.\n` +
+          '  해결 방법: claude.ai에서 데이터 내보내기를 다시 요청하고 새 manifest.json을 사용하세요.'
+        );
+      }
+
       // 2차: 브라우저로 자동 오픈 후 Downloads 폴더 감시
       console.log(`\n  [Download] 브라우저 인증이 필요합니다. 브라우저로 다운로드를 시작합니다...`);
 
@@ -140,6 +159,14 @@ export async function downloadFromManifest(manifestPath: string): Promise<string
       console.log(`  다운로드 완료: ${path.basename(zipPath)}`);
 
       zipBuffer = fs.readFileSync(zipPath);
+
+      // 브라우저 다운로드 파일도 매직 넘버 검증
+      if (!isZipBuffer(zipBuffer)) {
+        throw new Error(
+          `다운로드된 파일이 유효한 zip이 아닙니다: ${path.basename(zipPath)}\n` +
+          '  올바른 Claude 내보내기 zip 파일인지 확인해 주세요.'
+        );
+      }
     }
 
     const zip = new AdmZip(zipBuffer);
